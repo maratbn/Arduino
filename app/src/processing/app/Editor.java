@@ -1868,6 +1868,60 @@ public class Editor extends JFrame implements RunnerListener {
 
 
   /**
+   * Handles the user pressing Ctrl-Shift-R or clicking the Revert SimpleAction
+   * menu item on the EditorHeader menu that opens from the upside-down
+   * triangle that's on the right edge of the tabs bar of the IDE, which
+   * reverts / reloads the file in the current tab.
+   */
+  public void handleRevertTab() {
+
+    EditorTab tab = getCurrentTab();
+    if (tab == null) {
+      throw new IllegalStateException();
+    }
+
+    SketchFile fileInTab = tab.getSketchFile();
+    if (fileInTab == null) {
+      throw new IllegalStateException();
+    }
+
+    // As of Processing 1.0.10, this always happens immediately.
+    // http://dev.processing.org/bugs/show_bug.cgi?id=1456
+
+    toFront();
+
+    if (!fileInTab.fileExists()) {
+      JOptionPane.showMessageDialog(
+                      this,
+                      I18n.format(
+                        tr("Unable to revert \"{0}\" as it does not exist."),
+                        fileInTab.getFileName()),
+                      tr("Unable to Revert"),
+                      JOptionPane.ERROR_MESSAGE);
+      return;
+    }
+
+    String prompt = I18n.format(
+                      sketch.isModified()
+                        ? tr("Modifications detected to \"{0}\".  Revert anyway?")
+                        : tr("Revert \"{0}\"?"),
+                      fileInTab.getFileName());
+
+    int result =  JOptionPane.showConfirmDialog(this, prompt, tr("Revert"),
+                                                JOptionPane.OK_CANCEL_OPTION,
+                                                JOptionPane.QUESTION_MESSAGE);
+
+    switch (result) {
+      case JOptionPane.CANCEL_OPTION:  // Cancel clicked
+      case JOptionPane.CLOSED_OPTION:  // Escape key pressed
+        return;
+    }
+
+    tab.reload();
+  }
+
+
+  /**
    * Actually handle the save command. If 'immediately' is set to false,
    * this will happen in another thread so that the message area
    * will update and the save button will stay highlighted while the
